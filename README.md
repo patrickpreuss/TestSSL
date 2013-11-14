@@ -1,7 +1,7 @@
 Test SSL
 --------
 
-A cosmetic facade around the TestSSLServer by Thomas Pornin: http://www.bolet.org/TestSSLServer/ so that it can be used as a library from other Java apps.
+A cosmetic facade around the [TestSSLServer by Thomas Pornin](http://www.bolet.org/TestSSLServer/) so that it can be used as a library from other Java apps.
 
 Instead of printing out the results, it populates internal variables, usage is:
 ```Java
