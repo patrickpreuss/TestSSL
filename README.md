@@ -28,3 +28,6 @@ Instead of printing out the results, it populates internal variables, usage is:
 
 ```
   
+Warning
+-------
+This library is provided without any warranty of any kind.
