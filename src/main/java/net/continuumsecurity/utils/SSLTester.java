@@ -1,8 +1,15 @@
-package com.continuumsecurity.utils;/*
- * Cosmetic modification of Thomas Porning's origina TestSSLServer class, to allow
- * interogating the results from Java
+package net.continuumsecurity.utils;
+
+/*
+ * Stephen de Vries, www.continuumsecurity.net
  *
+ * Cosmetic modification of Thomas Porning's original TestSSLServer class, to allow
+ * use as a library.
  *
+ * Heartbleed test taken from Colm O'Flaherty's active scanner test for
+ * OWASP ZAP proxy: https://code.google.com/p/zaproxy/
+ *
+ * --------------------------------------------------------------------------
  * This application connects to the provided SSL/TLS server (by name and
  * port) and extracts the following information:
  * - supported versions (SSL 2.0, SSL 3.0, TLS 1.0 to 1.2)
@@ -61,7 +68,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
-public class TestSSL {
+public class SSLTester {
     private final int CLEAR  = 0; // no encryption
     private final int WEAK   = 1; // weak encryption: 40-bit key
     private final int MEDIUM = 2; // medium encryption: 56-bit key
@@ -76,6 +83,8 @@ public class TestSSL {
     int maxEncryptionStrength;
     boolean vulnBEAST = false;
     boolean vulnCRIME = false;
+    boolean vulnHeartbleed = false;
+    String heartbleedDetails;
 
     public List<String> getCertificates() {
         return certificates;
@@ -109,9 +118,9 @@ public class TestSSL {
         return vulnBEAST;
     }
 
-    public void test(String name, int port)
+    public void test(String host, int port)
             throws IOException {
-        InetSocketAddress isa = new InetSocketAddress(name, port);
+        InetSocketAddress isa = new InetSocketAddress(host, port);
         boolean compress = false;
         Set<Integer> sv = new TreeSet<Integer>();
         for (int v = 0x0300; v <= 0x0303; v ++) {
@@ -218,6 +227,14 @@ public class TestSSL {
         //System.out.println("CRIME status: "
         //        + (compress ? "vulnerable" : "protected"));
         vulnCRIME = compress;
+        testHeartbleed(host, port);
+    }
+
+    private void testHeartbleed(String host, int port) {
+        HeartBleedTester tester = new HeartBleedTester();
+        TestResult result = tester.test(host,port);
+        vulnHeartbleed= result.isVulnerable();
+        heartbleedDetails = result.getDetails();
     }
 
     /*
@@ -458,6 +475,14 @@ public class TestSSL {
     private final int APPLICATION        = 23;
 
     private final int MAX_RECORD_LEN = 16384;
+
+    public String getHeartbleedDetails() {
+        return heartbleedDetails;
+    }
+
+    public boolean isVulnHeartbleed() {
+        return vulnHeartbleed;
+    }
 
     /*
      * A custom stream which encodes data bytes into SSL/TLS records
@@ -1456,7 +1481,7 @@ public class TestSSL {
     public static void main(String... args) throws IOException {
         int port = 443;
         if (args.length == 2) port = Integer.parseInt(args[1]);
-        TestSSL testSSL = new TestSSL();
+        SSLTester testSSL = new SSLTester();
         testSSL.test(args[0], port);
 
         System.out.println("Supported protocols:");
@@ -1465,15 +1490,24 @@ public class TestSSL {
         }
         System.out.println("Supported ciphers:");
         for (String key : testSSL.getSupportedCiphers().keySet()) {
-            System.out.println("  "+key);
+            System.out.println("  " + key);
             for (String cipher : testSSL.getSupportedCiphers().get(key)) {
-                System.out.println("   "+cipher);
+                System.out.println("   " + cipher);
             }
         }
-        System.out.println("Vulnerable to BEAST: "+testSSL.isVulnBEAST());
-        System.out.println("Vulnerable to CRIME: "+testSSL.isVulnCRIME());
-        System.out.println("Minimum encryption strength [0-3]: "+testSSL.getMinEncryptionStrength());
-        System.out.println("Maximum encryption strength [0-3]: "+testSSL.getMaxEncryptionStrength());
 
+        System.out.println("Supported ciphers:");
+        for (String key : testSSL.getSupportedCiphers().keySet()) {
+            System.out.println("  " + key);
+            for (String cipher : testSSL.getSupportedCiphers().get(key)) {
+                System.out.println("   " + cipher);
+            }
+        }
+
+        System.out.println("Vulnerable to BEAST: " + testSSL.isVulnBEAST());
+        System.out.println("Vulnerable to CRIME: " + testSSL.isVulnCRIME());
+        System.out.println("Vulnerable to Heartbleed: " + testSSL.isVulnHeartbleed() + " protocols: " + testSSL.getHeartbleedDetails());
+        System.out.println("Minimum encryption strength [0-3]: " + testSSL.getMinEncryptionStrength());
+        System.out.println("Maximum encryption strength [0-3]: " + testSSL.getMaxEncryptionStrength());
     }
 }
