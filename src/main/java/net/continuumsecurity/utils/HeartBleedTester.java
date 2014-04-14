@@ -113,12 +113,12 @@ public class HeartBleedTester {
                     os.write(HeartBleedTester.helloBuffer);
 
                     while (true) {
-                        SSLInternal sslMessage = recvmsg(is, 2000);  //2 second timeout
+                        SSLInternal sslMessage = recvmsg(is, 5000);  //2 second timeout
                         if (sslMessage.typ == 0x16 && sslMessage.len > 0 && sslMessage.pay[0] == 0x0E)
                             break;
                     }
 
-                    boolean vulnerable = isVulnerable(is, os, 2000);  //2 second timeout on the check for each of SSL: 2.0, SSL 3.0, etc
+                    boolean vulnerable = isVulnerable(is, os, 5000);  //2 second timeout on the check for each of SSL: 2.0, SSL 3.0, etc
                     if (vulnerable) {
                         log.info("Vulnerable");
                         //bingo!
